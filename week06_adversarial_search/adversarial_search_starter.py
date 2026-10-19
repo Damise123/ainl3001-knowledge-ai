@@ -52,9 +52,10 @@ WINNING_LINES = [
 # --------------------------------------------------
 
 def print_board(state):
-    """Display the nine cells as a 3-by-3 board."""
-    # TODO: Print three rows of three cells.
-    pass
+    for row in range(0, 9, 3):
+        print(state[row], "|", state[row + 1], "|", state[row + 2])
+        if row < 6:
+            print("--+---+--")
 
 
 # --------------------------------------------------
@@ -62,9 +63,13 @@ def print_board(state):
 # --------------------------------------------------
 
 def available_moves(state):
-    """Return indices of empty cells (0 through 8)."""
-    # TODO: Find every position containing " ".
-    pass
+    moves = []
+
+    for index in range(len(state)):
+        if state[index] == " ":
+            moves.append(index)
+
+    return moves
 
 
 # --------------------------------------------------
@@ -72,12 +77,9 @@ def available_moves(state):
 # --------------------------------------------------
 
 def make_move(state, move, player):
-    """Return a NEW board with player ('X' or 'O') at move.
-
-    Assume move is legal. Do not modify the input board.
-    """
-    # TODO: Copy the board and place the player's mark.
-    pass
+    new_state = state.copy()
+    new_state[move] = player
+    return new_state
 
 
 # --------------------------------------------------
@@ -85,51 +87,66 @@ def make_move(state, move, player):
 # --------------------------------------------------
 
 def check_winner(state):
-    """Return 'X', 'O' or None by checking all winning lines."""
-    # TODO: Check each (a, b, c) in WINNING_LINES.
-    pass
+    for a, b, c in WINNING_LINES:
+        if state[a] != " " and state[a] == state[b] == state[c]:
+            return state[a]
+
+    return None
 
 
 # --------------------------------------------------
 # TASK 2 — TERMINAL STATE
 # --------------------------------------------------
 
-def is_terminal(state):
-    """Return True for a win or a full board (draw)."""
-    # TODO: Detect a winner OR no remaining empty cells.
-    pass
 
+def is_terminal(state):
+    if check_winner(state) is not None:
+        return True
+    return len(available_moves(state)) == 0
 
 # --------------------------------------------------
 # TASK 2 — UTILITY
 # --------------------------------------------------
 
 def utility(state):
-    """Return +1 for X win, -1 for O win, 0 for draw/no winner.
+    winner = check_winner(state)
 
-    Minimax calls this only at terminal states.
-    """
-    # TODO: Use check_winner() and return +1, -1 or 0.
-    pass
-
+    if winner == "X":
+        return 1
+    elif winner == "O":
+        return -1
+    else:
+        return 0
 
 # --------------------------------------------------
 # TASK 3 — MINIMAX
 # --------------------------------------------------
 
 def minimax(state, maximizing, counter):
-    """Return game-theoretic score; count every visited node.
+    counter["nodes"] += 1
 
-    maximizing=True means X moves next; False means O moves next.
-    counter is a one-item dictionary: {'nodes': 0}.
-    """
-    # TODO:
-    # 1. Count this node: counter["nodes"] += 1.
-    # 2. If terminal, return utility(state).
-    # 3. For X (MAX), recursively choose the highest score.
-    # 4. For O (MIN), recursively choose the lowest score.
-    # Use make_move() to avoid changing the original board.
-    pass
+    if is_terminal(state):
+        return utility(state)
+
+    if maximizing:
+        best_score = float("-inf")
+
+        for move in available_moves(state):
+            new_state = make_move(state, move, "X")
+            score = minimax(new_state, False, counter)
+            best_score = max(best_score, score)
+
+        return best_score
+
+    else:
+        best_score = float("inf")
+
+        for move in available_moves(state):
+            new_state = make_move(state, move, "O")
+            score = minimax(new_state, True, counter)
+            best_score = min(best_score, score)
+
+        return best_score
 
 
 # --------------------------------------------------
@@ -137,14 +154,21 @@ def minimax(state, maximizing, counter):
 # --------------------------------------------------
 
 def best_move(state, counter):
-    """Return the best move index for X, or None if game is over.
+    if is_terminal(state):
+        return None
 
-    Count nodes in recursive Minimax searches. Ties use first move.
-    """
-    # TODO: Try each legal X move, call minimax() for O's turn,
-    # and return the move with the highest score.
-    # If the board is terminal, return None.
-    pass
+    best_score = float("-inf")
+    chosen_move = None
+
+    for move in available_moves(state):
+        new_state = make_move(state, move, "X")
+        score = minimax(new_state, False, counter)
+
+        if score > best_score:
+            best_score = score
+            chosen_move = move
+
+    return chosen_move
 
 
 # --------------------------------------------------
@@ -152,16 +176,40 @@ def best_move(state, counter):
 # --------------------------------------------------
 
 def alpha_beta(state, maximizing, alpha, beta, counter):
-    """Return the same score as Minimax, pruning irrelevant branches.
+    counter["nodes"] += 1
 
-    alpha = best score MAX can guarantee so far.
-    beta  = best score MIN can guarantee so far.
-    """
-    # TODO: Adapt minimax():
-    # - MAX updates alpha; MIN updates beta.
-    # - Stop exploring remaining moves if alpha >= beta.
-    # - Count visited nodes exactly as in minimax().
-    pass
+    if is_terminal(state):
+        return utility(state)
+
+    if maximizing:
+        best_score = float("-inf")
+
+        for move in available_moves(state):
+            new_state = make_move(state, move, "X")
+            score = alpha_beta(new_state, False, alpha, beta, counter)
+
+            best_score = max(best_score, score)
+            alpha = max(alpha, best_score)
+
+            if alpha >= beta:
+                break
+
+        return best_score
+
+    else:
+        best_score = float("inf")
+
+        for move in available_moves(state):
+            new_state = make_move(state, move, "O")
+            score = alpha_beta(new_state, True, alpha, beta, counter)
+
+            best_score = min(best_score, score)
+            beta = min(beta, best_score)
+
+            if alpha >= beta:
+                break
+
+        return best_score
 
 
 # --------------------------------------------------
@@ -169,11 +217,25 @@ def alpha_beta(state, maximizing, alpha, beta, counter):
 # --------------------------------------------------
 
 def best_move_alpha_beta(state, counter):
-    """Return the best move index for X using Alpha-Beta search."""
-    # TODO: Like best_move(), but call alpha_beta().
-    # Start alpha at -infinity and beta at +infinity.
-    # Update alpha after each candidate X move.
-    pass
+    if is_terminal(state):
+        return None
+
+    best_score = float("-inf")
+    chosen_move = None
+    alpha = float("-inf")
+    beta = float("inf")
+
+    for move in available_moves(state):
+        new_state = make_move(state, move, "X")
+        score = alpha_beta(new_state, False, alpha, beta, counter)
+
+        if score > best_score:
+            best_score = score
+            chosen_move = move
+
+        alpha = max(alpha, best_score)
+
+    return chosen_move
 
 
 # --------------------------------------------------
@@ -209,3 +271,30 @@ if __name__ == "__main__":
     print("2. Why does Minimax assume an optimal opponent?")
     print("3. What is the purpose of a utility function?")
     print("4. What happens as games become larger?")
+
+    print("\nOutcome tests:")
+
+    x_win = [
+        "X", "X", "X",
+        "O", "O", " ",
+        " ", " ", " ",
+    ]
+
+    o_win = [
+        "X", "X", " ",
+        "O", "O", "O",
+        "X", " ", " ",
+    ]
+
+    draw = [
+        "X", "O", "X",
+        "X", "O", "O",
+        "O", "X", "X",
+    ]
+
+    for state in [x_win, o_win, draw]:
+        print_board(state)
+        print("Winner:", check_winner(state))
+        print("Terminal:", is_terminal(state))
+        print("Utility:", utility(state))
+        print()
