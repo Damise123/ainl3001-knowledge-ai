@@ -69,40 +69,40 @@ constraints = [
 # --------------------------------------------------
 
 def is_valid_assignment(assignment):
-    """Return True if a complete OR partial assignment is valid."""
     for region1, region2 in constraints:
         if region1 in assignment and region2 in assignment:
             if assignment[region1] == assignment[region2]:
                 return False
 
     return True
-    
-
-
 
 
 # --------------------------------------------------
 # TASK 3 AND TASK 5 — VARIABLE SELECTION
 # --------------------------------------------------
 
+
 def select_unassigned_variable(assignment):
-    """Choose the next unassigned region.
+    best_variable = None
+    fewest_colours = float("inf")
 
-    Task 3: First return the FIRST unassigned region.
+    for variable in variables:
+        if variable not in assignment:
+            legal_colours = 0
 
-    Task 5: Replace that approach with MRV (Minimum Remaining Values):
-    choose the unassigned region with the FEWEST currently legal
-    colours. Break ties by keeping the first region in variables.
-    """
-    # TASK 3 TODO:
-    # Return the first variable not in assignment, or None if all
-    # variables have been assigned.
-    #
-    # TASK 5 TODO (after backtracking works):
-    # For each unassigned variable, temporarily try each colour,
-    # check is_valid_assignment(), and undo the temporary assignment.
-    # Count legal colours and choose the variable with the fewest.
-    pass
+            for colour in domains[variable]:
+                assignment[variable] = colour
+
+                if is_valid_assignment(assignment):
+                    legal_colours += 1
+
+                del assignment[variable]
+
+            if legal_colours < fewest_colours:
+                fewest_colours = legal_colours
+                best_variable = variable
+
+    return best_variable
 
 
 # --------------------------------------------------
@@ -110,16 +110,26 @@ def select_unassigned_variable(assignment):
 # --------------------------------------------------
 
 def backtracking_search(assignment):
-    """Return a complete valid assignment, or None if none exists."""
-    # TODO:
-    # 1. If every variable has been assigned, return a COPY.
-    # 2. Choose a variable with select_unassigned_variable().
-    # 3. For each colour in its domain, temporarily assign it.
-    # 4. If the partial assignment is valid, search recursively.
-    # 5. Return the recursive result if a solution was found.
-    # 6. Otherwise remove the temporary assignment (backtrack).
-    # 7. Return None if every colour fails.
-    pass
+    if not is_valid_assignment(assignment):
+        return None
+
+    if len(assignment) == len(variables):
+        return assignment.copy()
+
+    variable = select_unassigned_variable(assignment)
+
+    for colour in domains[variable]:
+        assignment[variable] = colour
+
+        if is_valid_assignment(assignment):
+            result = backtracking_search(assignment)
+
+            if result is not None:
+                return result
+
+        del assignment[variable]
+
+    return None
 
 
 # --------------------------------------------------
@@ -128,8 +138,10 @@ def backtracking_search(assignment):
 
 # Six regions with three possible colours each give 3 ** 6 = 729
 # complete assignments. Why can backtracking avoid checking all 729?
-
-
+"""
+Backtracking rejects invalid partial assignments early.
+It skips all complete assignments that would extend those invalid choices, so it can avoid checking all 729 combinations.
+"""
 # --------------------------------------------------
 # TESTING AREA
 # --------------------------------------------------
